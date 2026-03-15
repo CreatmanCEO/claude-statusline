@@ -65,7 +65,13 @@ else
   echo -e "  ${GREEN}✓${RESET} Config: $CONF_PATH"
 fi
 
-STATUSLINE_CMD="$HOME/.claude/statusline.sh"
+# На Windows .sh не запускается напрямую — нужен bash
+if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || -n "${APPDATA:-}" ]]; then
+  BASH_PATH=$(command -v bash 2>/dev/null || echo "bash")
+  STATUSLINE_CMD="$BASH_PATH $HOME/.claude/statusline.sh"
+else
+  STATUSLINE_CMD="$HOME/.claude/statusline.sh"
+fi
 if [[ -f "$SETTINGS_PATH" ]]; then
   if command -v jq &>/dev/null; then
     TMP=$(mktemp)

@@ -76,6 +76,23 @@ VPS_SERVERS=(
 
 Статусы: 🟢● OK | 🟠◉ WARN (>80%) | 🔴◉ CRIT (>90%) | 🔴✗ DOWN | 🟣↻ BOOT (<5мин uptime)
 
+### Авто-фокус активного VPS
+
+Когда ты работаешь с сервером через MCP SSH, statusline **автоматически разворачивает** метрики этого сервера. Остальные — компактные точки.
+
+Добавь маппинг MCP-имён в конфиг:
+```bash
+VPS_FOCUS=auto
+VPS_MCP_MAP=(
+  "main|vps-main"
+  "new|vps-new"
+  "sec|vps-secondary"
+)
+```
+
+Работаешь с `vps-main` → видишь: `main● R:42% D:55% │ new● │ sec●`
+Переключился на `vps-secondary` → автоматически: `main● │ new● │ sec● R:61% D:70%`
+
 ## Зависимости
 
 - `bash` 4+, `jq` (обязательно)

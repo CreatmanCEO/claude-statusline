@@ -26,6 +26,8 @@ VPS_CRIT_RAM="${VPS_CRIT_RAM:-90}"
 VPS_WARN_DISK="${VPS_WARN_DISK:-80}"
 VPS_CRIT_DISK="${VPS_CRIT_DISK:-90}"
 COST_MODEL="${COST_MODEL:-auto}"
+VPS_FOCUS="${VPS_FOCUS:-auto}"          # auto | имя_сервера | none
+VPS_MCP_MAP=("${VPS_MCP_MAP[@]}")      # маппинг MCP→VPS: "main|vps-main" 
 
 if [[ -f "$CONFIG_FILE" ]]; then source "$CONFIG_FILE"; fi
 
@@ -82,6 +84,7 @@ LINES_ADD=$(echo "$input" | jq -r '.cost.total_lines_added // 0')
 LINES_DEL=$(echo "$input" | jq -r '.cost.total_lines_removed // 0')
 DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 WORK_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""')
+TRANSCRIPT_PATH=$(echo "$input" | jq -r '.transcript_path // ""')
 
 segments=()
 
@@ -144,6 +147,22 @@ if [[ "$SHOW_VPS" == "local" ]]; then
   fi
 elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
   VPS_CACHE_DIR="${VPS_CACHE_DIR:-/tmp}"; VPS_STALE_SEC="${VPS_STALE_SEC:-120}"; now=$(date +%s)
+
+  # --- Авто-определение активного VPS из transcript ---
+  FOCUSED_VPS=""
+  if [[ "$VPS_FOCUS" == "auto" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" && ${#VPS_MCP_MAP[@]} -gt 0 ]]; then
+    # Читаем последние 10KB transcript — ищем последний MCP SSH вызов
+    TAIL_DATA=$(tail -c 10000 "$TRANSCRIPT_PATH" 2>/dev/null || true)
+    for mapping in "${VPS_MCP_MAP[@]}"; do
+      IFS='|' read -r vps_name mcp_name <<< "$mapping"
+      if echo "$TAIL_DATA" | grep -q "$mcp_name" 2>/dev/null; then
+        FOCUSED_VPS="$vps_name"  # последний найденный = последний использованный
+      fi
+    done
+  elif [[ "$VPS_FOCUS" != "auto" && "$VPS_FOCUS" != "none" ]]; then
+    FOCUSED_VPS="$VPS_FOCUS"  # ручной режим
+  fi
+
   vps_segment=""; has_vps=false
   for cache_file in "${VPS_CACHE_DIR}"/vps-*.json; do
     [[ -f "$cache_file" ]] || continue; has_vps=true
@@ -151,26 +170,35 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
     vps_status=$(jq -r '.status // "down"' "$cache_file" 2>/dev/null)
     vps_ts=$(jq -r '.timestamp // 0' "$cache_file" 2>/dev/null)
     vps_ram=$(jq -r '.ram_pct // 0' "$cache_file" 2>/dev/null)
+    vps_cpu=$(jq -r '.cpu_load // "0"' "$cache_file" 2>/dev/null)
     vps_disk=$(jq -r '.disk_pct // 0' "$cache_file" 2>/dev/null)
     cache_age=$(( now - vps_ts ))
     (( cache_age > VPS_STALE_SEC )) && vps_status="stale"
+
+    # Этот VPS в фокусе? (активный или проблемный)
+    is_focused=false
+    [[ "$vps_name" == "$FOCUSED_VPS" ]] && is_focused=true
+    [[ "$vps_status" == "warn" || "$vps_status" == "crit" || "$vps_status" == "down" ]] && is_focused=true
+
     case "$vps_status" in
       ok) sym="●"; color="$C_GREEN" ;; warn) sym="◉"; color="$C_YELLOW" ;;
       crit) sym="◉"; color="$C_RED" ;; down) sym="✗"; color="$C_RED" ;;
       boot) sym="↻"; color="$C_MAGENTA" ;; *) sym="?"; color="$C_GRAY" ;;
     esac
-    if [[ "$vps_status" == "ok" || "$vps_status" == "stale" || "$vps_status" == "boot" ]]; then
-      vps_segment+="${color}${vps_name}${sym}${C_RESET} "
-    else
-      vps_segment+="${color}${C_BOLD}${vps_name}${sym}${C_RESET}"
-      if [[ "$vps_status" != "down" ]]; then
-        details=""
-        (( vps_ram >= VPS_WARN_RAM )) && details+=" $(color_by_threshold "$vps_ram" "$VPS_WARN_RAM" "$VPS_CRIT_RAM")RAM:${vps_ram}%${C_RESET}"
-        (( vps_disk >= VPS_WARN_DISK )) && details+=" $(color_by_threshold "$vps_disk" "$VPS_WARN_DISK" "$VPS_CRIT_DISK")Disk:${vps_disk}%${C_RESET}"
-        vps_segment+="${details} "
+
+    if [[ "$is_focused" == "true" ]]; then
+      # Развёрнутый вид — активный или проблемный сервер
+      if [[ "$vps_status" == "down" ]]; then
+        [[ "$LANG_RU" == "true" ]] && vps_segment+="${color}${C_BOLD}${vps_name}${sym} НЕТ СВЯЗИ${C_RESET} " || vps_segment+="${color}${C_BOLD}${vps_name}${sym} DOWN${C_RESET} "
       else
-        [[ "$LANG_RU" == "true" ]] && vps_segment+=" ${C_RED}${C_BOLD}НЕТ СВЯЗИ${C_RESET} " || vps_segment+=" ${C_RED}${C_BOLD}DOWN${C_RESET} "
+        vps_segment+="${color}${vps_name}${sym}${C_RESET}"
+        vps_segment+=" $(color_by_threshold "$vps_ram" "$VPS_WARN_RAM" "$VPS_CRIT_RAM")R:${vps_ram}%${C_RESET}"
+        vps_segment+=" $(color_by_threshold "$vps_disk" "$VPS_WARN_DISK" "$VPS_CRIT_DISK")D:${vps_disk}%${C_RESET}"
+        vps_segment+=" "
       fi
+    else
+      # Компактный вид — только точка
+      vps_segment+="${color}${vps_name}${sym}${C_RESET} "
     fi
   done
   [[ "$has_vps" == "true" ]] && { vps_segment="${vps_segment% }"; segments+=("$vps_segment"); }

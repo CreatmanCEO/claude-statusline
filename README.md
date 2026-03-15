@@ -1,65 +1,49 @@
 # claude-statusline
 
-Smart status line for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) with remote VPS monitoring, API cost estimation for Max/Pro/Team subscribers, and automatic tmux integration.
-
-> **🇷🇺 Русскоязычный инструмент.** English docs below.
-
-## Что это
-
-bash + jq скрипт, показывающий полезную инфу в статус-баре Claude Code:
+Умный status line для [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — видишь модель, стоимость, контекст и состояние VPS прямо во время работы.
 
 ```
-Opus │ main* │ +156/-23 │ ~$1.42(api) │ 12м │ 42% ctx
+Opus │ main* │ +156/-23 │ ~$1.65(api) │ 12мин │ main● R:42% D:55% │ new● │ sec● │ 42% контекст
 ```
 
-**Без Node.js. Без npm. Без плясок с бубном.**
+**Без Node.js. Без npm. Чистый bash + jq.**
 
-## Фичи
+## Установка
+
+Запусти Claude Code (`claude` в PowerShell/терминале) и скажи ему:
+
+```
+Клонируй https://github.com/CreatmanCEO/claude-statusline и установи через install.sh --ru
+```
+
+Или выполни в Claude Code вручную:
+
+```bash
+git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusline && bash ~/claude-statusline/install.sh --ru
+```
+
+Перезапусти Claude Code. Статус-линия появится автоматически.
+
+> **Важно:** установка работает из Claude Code или Git Bash. Из PowerShell/cmd напрямую — нет (там нет bash).
+
+## Что показывает
 
 - **Модель** — Opus / Sonnet / Haiku
-- **Git** — ветка + dirty status
-- **Строки кода** — добавлено/удалено за сессию
-- **Стоимость API** — автоопределение: подписка → теоретическая `~$1.65(api)`, API → реальная `$0.14`
-- **Контекстное окно** — цветовая индикация: 🟢 <50% 🟡 50-70% 🔴 >70% + `/compact!`
-- **VPS-мониторинг** — удалённый через фоновый поллер:
-  - `main● new● sec●` — всё ОК
-  - `sec◉ RAM:87% Disk:93%` — проблема развёрнута
-  - `new✗ DOWN` — сервер упал
-  - `main↻` — перезагрузился
-- **tmux** — bridge в статус-бар + popup по Prefix+y
+- **Git** — ветка + `*` если есть незакоммиченные изменения
+- **Строки кода** — сколько добавлено/удалено за сессию
+- **Стоимость** — подписка (Max/Pro/Team) → теоретическая `~$1.65(api)`, API → реальная `$0.14`
+- **Контекстное окно** — цвет меняется: 🟢 <50% 🟡 50-70% 🔴 >70% с подсказкой `/compact!`
+- **VPS-мониторинг** — состояние серверов в реальном времени (подробности ниже)
 
-## Платформы
+## Настройка VPS-мониторинга
 
-| | Статус | Системные метрики | tmux |
-|---|---|---|---|
-| **Linux** | ✅ | RAM, CPU, Disk | ✅ |
-| **macOS** | ✅ | vm_stat, sysctl | ✅ |
-| **WSL** | ✅ | RAM, CPU, Disk | ✅ |
-| **Git Bash** | ⚠️ | нет | нет |
+### Шаг 1 — добавить серверы
 
-## Быстрый старт
+Скажи Claude Code:
 
-> **Windows (PowerShell/cmd):** команды ниже работают только в bash. Два варианта:
-> 1. **Из Claude Code** (рекомендуется): запусти `claude` в PowerShell, затем прямо в нём выполни:
->    `git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusline && bash ~/claude-statusline/install.sh --ru`
-> 2. **Из Git Bash или WSL**: если установлены — выполни команды ниже напрямую
-
-```bash
-git clone https://github.com/CreatmanCEO/claude-statusline.git
-cd claude-statusline
-chmod +x install.sh
-./install.sh                   # базовая
-./install.sh --vps --tmux --ru # VPS + tmux + русский
-./install.sh --minimal         # модель + контекст
-./install.sh --uninstall       # удалить
 ```
+Открой ~/.claude/statusline.conf и добавь в конец:
 
-## VPS-мониторинг
-
-`SHOW_VPS` режимы: `false` (выкл) | `remote` (через поллер) | `local` (текущая машина)
-
-```bash
-# ~/.claude/statusline.conf
 SHOW_VPS=remote
 VPS_SERVERS=(
   "main|95.85.234.200|22|root|~/.ssh/claude_vps"
@@ -68,20 +52,33 @@ VPS_SERVERS=(
 )
 ```
 
-```bash
-./vps-poller.sh start   # запустить фоновый демон
-./vps-poller.sh status  # проверить
-./vps-poller.sh stop    # остановить
+Замени IP, юзеров и пути к ключам на свои.
+
+### Шаг 2 — запустить поллер
+
+Скажи Claude Code:
+
+```
+Запусти ~/claude-statusline/vps-poller.sh start
 ```
 
-Статусы: 🟢● OK | 🟠◉ WARN (>80%) | 🔴◉ CRIT (>90%) | 🔴✗ DOWN | 🟣↻ BOOT (<5мин uptime)
+Поллер работает в фоне, опрашивает серверы каждые 30 секунд по SSH. В статус-линии появятся точки: `main● new● sec●`
 
-### Авто-фокус активного VPS
+**Статусы:**
+- 🟢 `●` — всё ОК
+- 🟠 `◉` — RAM/CPU/Disk > 80% (подробности развёрнуты)
+- 🔴 `✗` — сервер не отвечает
+- 🟣 `↻` — только перезагрузился
 
-Когда ты работаешь с сервером через MCP SSH, statusline **автоматически разворачивает** метрики этого сервера. Остальные — компактные точки.
+### Шаг 3 — авто-фокус активного VPS
 
-Добавь маппинг MCP-имён в конфиг:
-```bash
+Когда работаешь с сервером через MCP SSH, statusline автоматически показывает его метрики. Остальные — только точки.
+
+Скажи Claude Code:
+
+```
+Добавь в ~/.claude/statusline.conf:
+
 VPS_FOCUS=auto
 VPS_MCP_MAP=(
   "main|vps-main"
@@ -90,8 +87,71 @@ VPS_MCP_MAP=(
 )
 ```
 
-Работаешь с `vps-main` → видишь: `main● R:42% D:55% │ new● │ sec●`
-Переключился на `vps-secondary` → автоматически: `main● │ new● │ sec● R:61% D:70%`
+Левая часть — имя сервера из `VPS_SERVERS`. Правая — имя MCP-подключения в Claude.
+
+Результат: работаешь с `vps-main` → `main● R:42% D:55% │ new● │ sec●`. Переключился на `vps-secondary` → `main● │ new● │ sec● R:61% D:70%`
+
+## Управление поллером
+
+Скажи Claude Code:
+
+```
+~/claude-statusline/vps-poller.sh status    # проверить работает ли
+~/claude-statusline/vps-poller.sh stop      # остановить
+~/claude-statusline/vps-poller.sh start     # запустить
+~/claude-statusline/vps-poller.sh once      # одноразовый опрос (для теста)
+```
+
+## Другие варианты установки
+
+В Claude Code:
+
+```bash
+bash ~/claude-statusline/install.sh --ru --tmux   # + tmux интеграция (popup по Prefix+y)
+bash ~/claude-statusline/install.sh --minimal      # только модель + контекст
+bash ~/claude-statusline/install.sh --uninstall    # удалить
+```
+
+## Настройка конфига
+
+Все параметры в `~/.claude/statusline.conf`. Изменения подхватываются автоматически — перезапуск не нужен.
+
+Чтобы посмотреть или изменить, скажи Claude Code:
+
+```
+Покажи мой ~/.claude/statusline.conf
+```
+
+Основные параметры:
+
+| Параметр | Значение | Что делает |
+|----------|----------|------------|
+| `SHOW_MODEL` | true/false | Имя модели |
+| `SHOW_COST` | true/false | Стоимость |
+| `SHOW_CONTEXT` | true/false | Процент контекста |
+| `SHOW_LINES` | true/false | +/- строки кода |
+| `SHOW_DURATION` | true/false | Время сессии |
+| `SHOW_GIT` | true/false | Git branch |
+| `SHOW_TOKENS` | true/false | Токены (input → output) |
+| `SHOW_VPS` | false/remote/local | VPS-мониторинг |
+| `LANG_RU` | true/false | Русские подписи |
+| `CONTEXT_WARN` | 50 | % контекста → жёлтый |
+| `CONTEXT_CRIT` | 70 | % контекста → красный |
+
+## Полезные slash-команды Claude Code
+
+- `/cost` — стоимость сессии и токены
+- `/context` — детальная разбивка контекстного окна
+- `/compact` — сжать контекст (когда статус-линия красная)
+- `/model sonnet` — переключить модель
+
+## Платформы
+
+| | Статус | Метрики | tmux |
+|---|---|---|---|
+| **Linux** | ✅ | ✅ | ✅ |
+| **macOS** | ✅ | ✅ | ✅ |
+| **Windows (через Claude Code)** | ✅ | ✅ | — |
 
 ## Зависимости
 
@@ -102,29 +162,33 @@ VPS_MCP_MAP=(
 
 ## English
 
-Smart status line for Claude Code. Pure bash + jq, no Node.js required.
+Smart status line for Claude Code — model, cost, context %, VPS health at a glance.
 
-```
-Opus │ main* │ +156/-23 │ ~$1.42(api) │ 12m │ 42% ctx
+### Install
+
+Run inside Claude Code:
+```bash
+git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusline && bash ~/claude-statusline/install.sh
 ```
 
 ### Features
-- Model, git branch, lines changed, context % with color coding
+- Model, git branch, lines changed, context % with color coding (green → yellow → red)
 - API cost: theoretical for subscribers (Max/Pro/Team), real for API users
-- Remote VPS monitoring via background SSH poller (compact dots when OK, expanded on problems)
-- Auto tmux bridge + popup window (Prefix+y)
+- Remote VPS monitoring via background SSH poller with auto-focus on active MCP server
+- tmux integration with status bar bridge + popup window
 
-### Quick start
+### VPS monitoring
+Add to `~/.claude/statusline.conf`:
 ```bash
-git clone https://github.com/CreatmanCEO/claude-statusline.git
-cd claude-statusline && chmod +x install.sh
-./install.sh              # basic
-./install.sh --vps --tmux # VPS + tmux
+SHOW_VPS=remote
+VPS_SERVERS=("prod|1.2.3.4|22|root|~/.ssh/key")
+VPS_FOCUS=auto
+VPS_MCP_MAP=("prod|my-mcp-server")
 ```
+Then run: `~/claude-statusline/vps-poller.sh start`
 
 ### Platforms
-Linux, macOS, Windows (WSL) — full support. Git Bash — basic (no system metrics).
+Linux, macOS, Windows (via Claude Code shell) — full support.
 
 ## License
-
 MIT — [Nick Podolyak](https://github.com/CreatmanCEO) / CREATMAN Studio

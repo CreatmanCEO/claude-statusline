@@ -39,9 +39,10 @@ Opus │ main* │ +156/-23 │ ~$1.42(api) │ 12м │ 42% ctx
 
 ## Быстрый старт
 
-> **Windows:** НЕ запускай из cmd или PowerShell напрямую. Два варианта:
-> 1. **Из Claude Code** (рекомендуется): запусти `claude`, затем в нём выполни команды ниже
-> 2. **Из Git Bash или WSL**: если установлены
+> **Windows (PowerShell/cmd):** команды ниже работают только в bash. Два варианта:
+> 1. **Из Claude Code** (рекомендуется): запусти `claude` в PowerShell, затем прямо в нём выполни:
+>    `git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusline && bash ~/claude-statusline/install.sh --ru`
+> 2. **Из Git Bash или WSL**: если установлены — выполни команды ниже напрямую
 
 ```bash
 git clone https://github.com/CreatmanCEO/claude-statusline.git

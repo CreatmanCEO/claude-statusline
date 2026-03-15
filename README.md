@@ -39,6 +39,8 @@ Opus │ main* │ +156/-23 │ ~$1.42(api) │ 12м │ 42% ctx
 
 ## Быстрый старт
 
+> **Windows:** запускай из **WSL** или **Git Bash**, не из cmd. Или просто попроси Claude Code установить: `Клонируй https://github.com/CreatmanCEO/claude-statusline и установи через install.sh --ru`
+
 ```bash
 git clone https://github.com/CreatmanCEO/claude-statusline.git
 cd claude-statusline

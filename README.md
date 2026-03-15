@@ -142,6 +142,15 @@ bash ~/claude-statusline/install.sh --uninstall    # удалить
 | `CONTEXT_WARN` | 50 | % контекста → жёлтый |
 | `CONTEXT_CRIT` | 70 | % контекста → красный |
 
+## Если статуслайн пропал после установки (Windows)
+
+На Windows `.sh` файлы не запускаются напрямую. Скажи Claude Code:
+```
+В ~/.claude/settings.json замени statusLine.command на: bash /c/Users/ТВОЁ_ИМЯ/.claude/statusline.sh
+```
+
+Потом `/exit` → `claude`.
+
 ## Если не отображаются лимиты H/W
 
 Лимиты требуют OAuth-токен. Если `H:` и `W:` не появились:

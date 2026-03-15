@@ -191,10 +191,10 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
       if [[ "$vps_status" == "down" ]]; then
         [[ "$LANG_RU" == "true" ]] && vps_segment+="${color}${C_BOLD}${vps_name}${sym} НЕТ СВЯЗИ${C_RESET} " || vps_segment+="${color}${C_BOLD}${vps_name}${sym} DOWN${C_RESET} "
       else
-        vps_segment+="${color}${vps_name}${sym}${C_RESET}"
-        vps_segment+=" $(color_by_threshold "$vps_ram" "$VPS_WARN_RAM" "$VPS_CRIT_RAM")R:${vps_ram}%${C_RESET}"
-        vps_segment+=" $(color_by_threshold "$vps_disk" "$VPS_WARN_DISK" "$VPS_CRIT_DISK")D:${vps_disk}%${C_RESET}"
-        vps_segment+=" "
+        vps_segment+="${color}${C_BOLD}${vps_name}${sym}${C_RESET}${C_DIM}(${C_RESET}"
+        vps_segment+="$(color_by_threshold "$vps_ram" "$VPS_WARN_RAM" "$VPS_CRIT_RAM")R:${vps_ram}%${C_RESET} "
+        vps_segment+="$(color_by_threshold "$vps_disk" "$VPS_WARN_DISK" "$VPS_CRIT_DISK")D:${vps_disk}%${C_RESET}"
+        vps_segment+="${C_DIM})${C_RESET} "
       fi
     else
       # Компактный вид — только точка

@@ -129,7 +129,7 @@ get_usage_limits() {
 
   # Сохранить кэш
   mkdir -p "$(dirname "$cache_file")"
-  echo "{"h_remain":${h_remain},"w_remain":${w_remain},"h_time":"${h_time}","cached_at":${now}}" > "$cache_file"
+  printf '{"h_remain":%s,"w_remain":%s,"h_time":"%s","cached_at":%s}\n' "$h_remain" "$w_remain" "$h_time" "$now" > "$cache_file"
   chmod 600 "$cache_file" 2>/dev/null
   cat "$cache_file"
 }

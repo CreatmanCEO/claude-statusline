@@ -65,10 +65,9 @@ else
   echo -e "  ${GREEN}✓${RESET} Config: $CONF_PATH"
 fi
 
-# Windows can't execute .sh directly — need bash prefix
+# Windows can't execute .sh directly — need "bash" prefix (not full path!)
 if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || -n "${APPDATA:-}" ]]; then
-  BASH_PATH=$(command -v bash 2>/dev/null || echo "bash")
-  STATUSLINE_CMD="$BASH_PATH $HOME/.claude/statusline.sh"
+  STATUSLINE_CMD="bash $HOME/.claude/statusline.sh"
 else
   STATUSLINE_CMD="$HOME/.claude/statusline.sh"
 fi

@@ -26,10 +26,10 @@ VPS_CRIT_RAM="${VPS_CRIT_RAM:-90}"
 VPS_WARN_DISK="${VPS_WARN_DISK:-80}"
 VPS_CRIT_DISK="${VPS_CRIT_DISK:-90}"
 COST_MODEL="${COST_MODEL:-auto}"
-SHOW_LIMITS="${SHOW_LIMITS:-true}"        # H/W лимиты (5ч/7д квоты)
-LIMITS_CACHE_SEC="${LIMITS_CACHE_SEC:-120}"  # кэш лимитов (секунды)
-VPS_FOCUS="${VPS_FOCUS:-auto}"          # auto | имя_сервера | none
-VPS_MCP_MAP=("${VPS_MCP_MAP[@]}")      # маппинг MCP→VPS: "main|vps-main" 
+SHOW_LIMITS="${SHOW_LIMITS:-true}"        # H/W limits (5h/7d quotas)
+LIMITS_CACHE_SEC="${LIMITS_CACHE_SEC:-120}"  # limits cache (seconds)
+VPS_FOCUS="${VPS_FOCUS:-auto}"          # auto | server_name | none
+VPS_MCP_MAP=("${VPS_MCP_MAP[@]}")      # MCP→VPS mapping: "main|vps-main"
 
 if [[ -f "$CONFIG_FILE" ]]; then source "$CONFIG_FILE"; fi
 
@@ -57,13 +57,13 @@ calc_api_cost() {
   echo "$input_tokens $output_tokens $input_price $output_price" | awk '{printf "%.2f", ($1/1000000*$3)+($2/1000000*$4)}'
 }
 
-# Получение лимитов H/W через OAuth API
-# Вдохновлено: https://github.com/AndyShaman/claude-statusline (спасибо @AndyShaman!)
+# Get H/W usage limits via OAuth API
+# Inspired by: https://github.com/AndyShaman/claude-statusline (thanks @AndyShaman!)
 get_usage_limits() {
   local cache_file="$HOME/.claude/.usage-cache.json"
   local now=$(date +%s)
 
-  # Проверить кэш
+  # Check cache
   if [[ -f "$cache_file" ]]; then
     local cache_ts=$(jq -r '.cached_at // 0' "$cache_file" 2>/dev/null)
     local cache_age=$(( now - cache_ts ))
@@ -73,7 +73,7 @@ get_usage_limits() {
     fi
   fi
 
-  # Получить OAuth токен (кроссплатформенно)
+  # Get OAuth token (cross-platform)
   local cred_json=""
   if [[ "$(uname)" == "Darwin" ]]; then
     cred_json=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)
@@ -94,11 +94,11 @@ get_usage_limits() {
   local token=$(echo "$cred_json" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
   [[ -z "$token" ]] && return 1
 
-  # Запрос к API
+  # API request
   local api_result
   api_result=$(curl -sf --max-time 3 "https://api.anthropic.com/api/oauth/usage"     -H "Authorization: Bearer $token"     -H "anthropic-beta: oauth-2025-04-20" 2>/dev/null) || return 1
 
-  # Парсим и кэшируем
+  # Parse and cache
   local h_util=$(echo "$api_result" | jq -r '.five_hour.utilization // empty' 2>/dev/null)
   local h_reset=$(echo "$api_result" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
   local w_util=$(echo "$api_result" | jq -r '.seven_day.utilization // empty' 2>/dev/null)
@@ -108,7 +108,7 @@ get_usage_limits() {
   local h_remain=$(echo "$h_util" | awk '{printf "%.0f", 100-$1}')
   local w_remain=$(echo "$w_util" | awk '{printf "%.0f", 100-$1}')
 
-  # Время до сброса H
+  # Time until H reset
   local h_time=""
   if [[ -n "$h_reset" ]]; then
     local reset_epoch
@@ -127,7 +127,7 @@ get_usage_limits() {
     fi
   fi
 
-  # Сохранить кэш
+  # Save cache
   mkdir -p "$(dirname "$cache_file")"
   printf '{"h_remain":%s,"w_remain":%s,"h_time":"%s","cached_at":%s}\n' "$h_remain" "$w_remain" "$h_time" "$now" > "$cache_file"
   chmod 600 "$cache_file" 2>/dev/null
@@ -206,7 +206,7 @@ if [[ "$SHOW_COST" == "true" ]]; then
   fi
 fi
 
-# Лимиты H/W (5-часовая и недельная квоты)
+# H/W limits (5-hour and weekly quotas)
 if [[ "$SHOW_LIMITS" == "true" ]]; then
   LIMITS_DATA=$(get_usage_limits 2>/dev/null || true)
   if [[ -n "$LIMITS_DATA" ]]; then
@@ -245,19 +245,19 @@ if [[ "$SHOW_VPS" == "local" ]]; then
 elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
   VPS_CACHE_DIR="${VPS_CACHE_DIR:-/tmp}"; VPS_STALE_SEC="${VPS_STALE_SEC:-120}"; now=$(date +%s)
 
-  # --- Авто-определение активного VPS из transcript ---
+  # --- Auto-detect active VPS from transcript ---
   FOCUSED_VPS=""
   if [[ "$VPS_FOCUS" == "auto" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" && ${#VPS_MCP_MAP[@]} -gt 0 ]]; then
-    # Читаем последние 10KB transcript — ищем последний MCP SSH вызов
+    # Read last 10KB of transcript — find last MCP SSH call
     TAIL_DATA=$(tail -c 10000 "$TRANSCRIPT_PATH" 2>/dev/null || true)
     for mapping in "${VPS_MCP_MAP[@]}"; do
       IFS='|' read -r vps_name mcp_name <<< "$mapping"
       if echo "$TAIL_DATA" | grep -q "$mcp_name" 2>/dev/null; then
-        FOCUSED_VPS="$vps_name"  # последний найденный = последний использованный
+        FOCUSED_VPS="$vps_name"  # last found = last used
       fi
     done
   elif [[ "$VPS_FOCUS" != "auto" && "$VPS_FOCUS" != "none" ]]; then
-    FOCUSED_VPS="$VPS_FOCUS"  # ручной режим
+    FOCUSED_VPS="$VPS_FOCUS"  # manual mode
   fi
 
   vps_segment=""; has_vps=false
@@ -272,7 +272,7 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
     cache_age=$(( now - vps_ts ))
     (( cache_age > VPS_STALE_SEC )) && vps_status="stale"
 
-    # Этот VPS в фокусе? (активный или проблемный)
+    # Is this VPS focused? (active or problematic)
     is_focused=false
     [[ "$vps_name" == "$FOCUSED_VPS" ]] && is_focused=true
     [[ "$vps_status" == "warn" || "$vps_status" == "crit" || "$vps_status" == "down" ]] && is_focused=true
@@ -284,7 +284,7 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
     esac
 
     if [[ "$is_focused" == "true" ]]; then
-      # Развёрнутый вид — активный или проблемный сервер
+      # Expanded view — active or problematic server
       if [[ "$vps_status" == "down" ]]; then
         [[ "$LANG_RU" == "true" ]] && vps_segment+="${color}${C_BOLD}${vps_name}${sym} НЕТ СВЯЗИ${C_RESET} " || vps_segment+="${color}${C_BOLD}${vps_name}${sym} DOWN${C_RESET} "
       else
@@ -294,7 +294,7 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
         vps_segment+="${C_DIM})${C_RESET} "
       fi
     else
-      # Компактный вид — только точка
+      # Compact view — dot only
       vps_segment+="${color}${vps_name}${sym}${C_RESET} "
     fi
   done

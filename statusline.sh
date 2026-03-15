@@ -26,6 +26,8 @@ VPS_CRIT_RAM="${VPS_CRIT_RAM:-90}"
 VPS_WARN_DISK="${VPS_WARN_DISK:-80}"
 VPS_CRIT_DISK="${VPS_CRIT_DISK:-90}"
 COST_MODEL="${COST_MODEL:-auto}"
+SHOW_LIMITS="${SHOW_LIMITS:-true}"        # H/W лимиты (5ч/7д квоты)
+LIMITS_CACHE_SEC="${LIMITS_CACHE_SEC:-120}"  # кэш лимитов (секунды)
 VPS_FOCUS="${VPS_FOCUS:-auto}"          # auto | имя_сервера | none
 VPS_MCP_MAP=("${VPS_MCP_MAP[@]}")      # маппинг MCP→VPS: "main|vps-main" 
 
@@ -53,6 +55,81 @@ calc_api_cost() {
     *) input_price="3.00"; output_price="15.00" ;;
   esac
   echo "$input_tokens $output_tokens $input_price $output_price" | awk '{printf "%.2f", ($1/1000000*$3)+($2/1000000*$4)}'
+}
+
+# Получение лимитов H/W через OAuth API
+# Вдохновлено: https://github.com/AndyShaman/claude-statusline (спасибо @AndyShaman!)
+get_usage_limits() {
+  local cache_file="$HOME/.claude/.usage-cache.json"
+  local now=$(date +%s)
+
+  # Проверить кэш
+  if [[ -f "$cache_file" ]]; then
+    local cache_ts=$(jq -r '.cached_at // 0' "$cache_file" 2>/dev/null)
+    local cache_age=$(( now - cache_ts ))
+    if (( cache_age < LIMITS_CACHE_SEC )); then
+      cat "$cache_file"
+      return 0
+    fi
+  fi
+
+  # Получить OAuth токен (кроссплатформенно)
+  local cred_json=""
+  if [[ "$(uname)" == "Darwin" ]]; then
+    cred_json=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)
+  elif command -v secret-tool &>/dev/null; then
+    cred_json=$(secret-tool lookup service "Claude Code-credentials" 2>/dev/null || true)
+  elif [[ -f "$HOME/.claude/.credentials" ]]; then
+    cred_json=$(cat "$HOME/.claude/.credentials" 2>/dev/null || true)
+  elif [[ -n "${APPDATA:-}" && -f "$APPDATA/claude/.credentials" ]]; then
+    cred_json=$(cat "$APPDATA/claude/.credentials" 2>/dev/null || true)
+  elif [[ -n "${LOCALAPPDATA:-}" && -f "$LOCALAPPDATA/claude/.credentials" ]]; then
+    cred_json=$(cat "$LOCALAPPDATA/claude/.credentials" 2>/dev/null || true)
+  fi
+
+  [[ -z "$cred_json" ]] && return 1
+
+  local token=$(echo "$cred_json" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
+  [[ -z "$token" ]] && return 1
+
+  # Запрос к API
+  local api_result
+  api_result=$(curl -sf --max-time 3 "https://api.anthropic.com/api/oauth/usage"     -H "Authorization: Bearer $token"     -H "anthropic-beta: oauth-2025-04-20" 2>/dev/null) || return 1
+
+  # Парсим и кэшируем
+  local h_util=$(echo "$api_result" | jq -r '.five_hour.utilization // empty' 2>/dev/null)
+  local h_reset=$(echo "$api_result" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
+  local w_util=$(echo "$api_result" | jq -r '.seven_day.utilization // empty' 2>/dev/null)
+
+  [[ -z "$h_util" ]] && return 1
+
+  local h_remain=$(echo "$h_util" | awk '{printf "%.0f", 100-$1}')
+  local w_remain=$(echo "$w_util" | awk '{printf "%.0f", 100-$1}')
+
+  # Время до сброса H
+  local h_time=""
+  if [[ -n "$h_reset" ]]; then
+    local reset_epoch
+    if date -d "$h_reset" +%s &>/dev/null; then
+      reset_epoch=$(date -d "$h_reset" +%s 2>/dev/null)
+    elif python3 -c "pass" &>/dev/null; then
+      reset_epoch=$(python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('${h_reset}'.replace('Z','+00:00')).timestamp()))" 2>/dev/null)
+    fi
+    if [[ -n "$reset_epoch" ]]; then
+      local diff=$(( reset_epoch - now ))
+      if (( diff > 0 )); then
+        local hh=$(( diff / 3600 ))
+        local mm=$(( (diff % 3600) / 60 ))
+        (( hh > 0 )) && h_time="${hh}h${mm}m" || h_time="${mm}m"
+      fi
+    fi
+  fi
+
+  # Сохранить кэш
+  mkdir -p "$(dirname "$cache_file")"
+  echo "{"h_remain":${h_remain},"w_remain":${w_remain},"h_time":"${h_time}","cached_at":${now}}" > "$cache_file"
+  chmod 600 "$cache_file" 2>/dev/null
+  cat "$cache_file"
 }
 
 format_tokens() {
@@ -124,6 +201,24 @@ if [[ "$SHOW_COST" == "true" ]]; then
     if [[ "$COST_MODEL" == "auto" ]]; then API_COST=$(calc_api_cost "$MODEL_ID" "$INPUT_TOKENS" "$OUTPUT_TOKENS")
     else API_COST=$(calc_api_cost "$COST_MODEL" "$INPUT_TOKENS" "$OUTPUT_TOKENS"); fi
     segments+=("${C_YELLOW}~\$${API_COST}${C_DIM}(api)${C_RESET}")
+  fi
+fi
+
+# Лимиты H/W (5-часовая и недельная квоты)
+if [[ "$SHOW_LIMITS" == "true" ]]; then
+  LIMITS_DATA=$(get_usage_limits 2>/dev/null || true)
+  if [[ -n "$LIMITS_DATA" ]]; then
+    H_REMAIN=$(echo "$LIMITS_DATA" | jq -r '.h_remain // empty' 2>/dev/null)
+    W_REMAIN=$(echo "$LIMITS_DATA" | jq -r '.w_remain // empty' 2>/dev/null)
+    H_TIME=$(echo "$LIMITS_DATA" | jq -r '.h_time // empty' 2>/dev/null)
+    if [[ -n "$H_REMAIN" ]]; then
+      H_COLOR=$(color_by_threshold "$((100 - H_REMAIN))" 50 80)
+      W_COLOR=$(color_by_threshold "$((100 - W_REMAIN))" 50 80)
+      LIMIT_STR="${H_COLOR}H:${H_REMAIN}%${C_RESET}"
+      [[ -n "$H_TIME" ]] && LIMIT_STR+=" ${C_DIM}${H_TIME}${C_RESET}"
+      LIMIT_STR+=" ${W_COLOR}W:${W_REMAIN}%${C_RESET}"
+      segments+=("$LIMIT_STR")
+    fi
   fi
 fi
 

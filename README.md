@@ -3,7 +3,7 @@
 Умный status line для [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — видишь модель, стоимость, контекст и состояние VPS прямо во время работы.
 
 ```
-Opus │ main* │ +156/-23 │ ~$1.65(api) │ 12мин │ main● R:42% D:55% │ new● │ sec● │ 42% контекст
+Opus │ main* │ +156/-23 │ ~$1.65(api) │ H:78% 2h15m W:92% │ 12мин │ main●(R:42% D:55%) new● sec● │ 42% контекст
 ```
 
 **Без Node.js. Без npm. Чистый bash + jq.**
@@ -32,6 +32,7 @@ git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusli
 - **Git** — ветка + `*` если есть незакоммиченные изменения
 - **Строки кода** — сколько добавлено/удалено за сессию
 - **Стоимость** — подписка (Max/Pro/Team) → теоретическая `~$1.65(api)`, API → реальная `$0.14`
+- **Лимиты H/W** — остаток 5-часовой и недельной квоты: `H:78% 2h15m W:87%` с цветовой индикацией
 - **Контекстное окно** — цвет меняется: 🟢 <50% 🟡 50-70% 🔴 >70% с подсказкой `/compact!`
 - **VPS-мониторинг** — состояние серверов в реальном времени (подробности ниже)
 
@@ -134,6 +135,7 @@ bash ~/claude-statusline/install.sh --uninstall    # удалить
 | `SHOW_GIT` | true/false | Git branch |
 | `SHOW_TOKENS` | true/false | Токены (input → output) |
 | `SHOW_VPS` | false/remote/local | VPS-мониторинг |
+| `SHOW_LIMITS` | true/false | Лимиты H/W (5ч/7д квоты) |
 | `LANG_RU` | true/false | Русские подписи |
 | `CONTEXT_WARN` | 50 | % контекста → жёлтый |
 | `CONTEXT_CRIT` | 70 | % контекста → красный |
@@ -173,6 +175,7 @@ git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusli
 
 ### Features
 - Model, git branch, lines changed, context % with color coding (green → yellow → red)
+- Usage limits H/W: remaining 5-hour and 7-day quotas with time until reset
 - API cost: theoretical for subscribers (Max/Pro/Team), real for API users
 - Remote VPS monitoring via background SSH poller with auto-focus on active MCP server
 - tmux integration with status bar bridge + popup window
@@ -189,6 +192,10 @@ Then run: `~/claude-statusline/vps-poller.sh start`
 
 ### Platforms
 Linux, macOS, Windows (via Claude Code shell) — full support.
+
+## Благодарности
+
+Фича лимитов H/W (5-часовая и недельная квоты) вдохновлена проектом [@AndyShaman/claude-statusline](https://github.com/AndyShaman/claude-statusline) — спасибо за идею и документацию OAuth API! Если нужны только лимиты без VPS-мониторинга, рекомендуем его версию.
 
 ## License
 MIT — [Nick Podolyak](https://github.com/CreatmanCEO) / CREATMAN Studio

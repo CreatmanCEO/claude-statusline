@@ -79,12 +79,14 @@ get_usage_limits() {
     cred_json=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)
   elif command -v secret-tool &>/dev/null; then
     cred_json=$(secret-tool lookup service "Claude Code-credentials" 2>/dev/null || true)
+  elif [[ -f "$HOME/.claude/.credentials.json" ]]; then
+    cred_json=$(cat "$HOME/.claude/.credentials.json" 2>/dev/null || true)
   elif [[ -f "$HOME/.claude/.credentials" ]]; then
     cred_json=$(cat "$HOME/.claude/.credentials" 2>/dev/null || true)
-  elif [[ -n "${APPDATA:-}" && -f "$APPDATA/claude/.credentials" ]]; then
-    cred_json=$(cat "$APPDATA/claude/.credentials" 2>/dev/null || true)
-  elif [[ -n "${LOCALAPPDATA:-}" && -f "$LOCALAPPDATA/claude/.credentials" ]]; then
-    cred_json=$(cat "$LOCALAPPDATA/claude/.credentials" 2>/dev/null || true)
+  elif [[ -n "${APPDATA:-}" ]]; then
+    cred_json=$(cat "$APPDATA/claude/.credentials.json" 2>/dev/null || cat "$APPDATA/claude/.credentials" 2>/dev/null || true)
+  elif [[ -n "${LOCALAPPDATA:-}" ]]; then
+    cred_json=$(cat "$LOCALAPPDATA/claude/.credentials.json" 2>/dev/null || cat "$LOCALAPPDATA/claude/.credentials" 2>/dev/null || true)
   fi
 
   [[ -z "$cred_json" ]] && return 1

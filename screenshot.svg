@@ -1,37 +1,29 @@
-<svg width="1200" height="80" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="80" rx="8" fill="#1a1b26"/>
-  <!-- Model -->
-  <text x="20" y="46" font-family="'JetBrains Mono','Fira Code',monospace" font-size="15" fill="#bb9af7" font-weight="bold">Opus 4.6 (1M context)</text>
-  <text x="228" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- Git -->
-  <text x="252" y="46" font-family="monospace" font-size="15" fill="#73daca">main</text>
-  <text x="296" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- Lines -->
-  <text x="320" y="46" font-family="monospace" font-size="15" fill="#9ece6a">+19</text>
-  <text x="354" y="46" font-family="monospace" font-size="15" fill="#f7768e">/-7</text>
-  <text x="382" y="46" font-family="monospace" font-size="12" fill="#565f89"> стр</text>
-  <text x="412" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- Cost -->
-  <text x="436" y="46" font-family="monospace" font-size="15" fill="#e0af68">~$2.04</text>
-  <text x="494" y="46" font-family="monospace" font-size="12" fill="#565f89">(api)</text>
-  <text x="530" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- Limits -->
-  <text x="554" y="46" font-family="monospace" font-size="15" fill="#9ece6a">H:82%</text>
-  <text x="610" y="46" font-family="monospace" font-size="12" fill="#565f89">3h12m</text>
-  <text x="660" y="46" font-family="monospace" font-size="15" fill="#9ece6a">W:94%</text>
-  <text x="720" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- Duration -->
-  <text x="744" y="46" font-family="monospace" font-size="15" fill="#565f89">19ч21м</text>
-  <text x="808" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- VPS -->
-  <text x="832" y="46" font-family="monospace" font-size="15" fill="#9ece6a">main●</text>
-  <text x="884" y="46" font-family="monospace" font-size="15" fill="#9ece6a">new●</text>
-  <text x="932" y="46" font-family="monospace" font-size="15" fill="#9ece6a">sec●</text>
-  <text x="972" y="46" font-family="monospace" font-size="12" fill="#565f89">(</text>
-  <text x="980" y="46" font-family="monospace" font-size="15" fill="#9ece6a">R:45%</text>
-  <text x="1032" y="46" font-family="monospace" font-size="15" fill="#9ece6a">D:48%</text>
-  <text x="1084" y="46" font-family="monospace" font-size="12" fill="#565f89">)</text>
-  <text x="1096" y="46" font-family="monospace" font-size="15" fill="#3b4261"> │ </text>
-  <!-- Context -->
-  <text x="1120" y="46" font-family="monospace" font-size="15" fill="#9ece6a">7% контекст</text>
+<svg width="1400" height="56" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1400" height="56" rx="6" fill="#1a1b26"/>
+  <text x="16" y="34" font-family="'JetBrains Mono',monospace" font-size="14" fill="#bb9af7" font-weight="bold">Opus 4.6 (1M context)</text>
+  <text x="222" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="246" y="34" font-family="monospace" font-size="14" fill="#73daca">main*</text>
+  <text x="296" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="320" y="34" font-family="monospace" font-size="14" fill="#9ece6a">+47</text>
+  <text x="352" y="34" font-family="monospace" font-size="14" fill="#f7768e">/-12</text>
+  <text x="388" y="34" font-family="monospace" font-size="11" fill="#565f89"> стр</text>
+  <text x="416" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="440" y="34" font-family="monospace" font-size="14" fill="#e0af68">~$3.85</text>
+  <text x="496" y="34" font-family="monospace" font-size="11" fill="#565f89">(api)</text>
+  <text x="530" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="554" y="34" font-family="monospace" font-size="14" fill="#9ece6a">H:82%</text>
+  <text x="608" y="34" font-family="monospace" font-size="11" fill="#565f89">3h12m</text>
+  <text x="656" y="34" font-family="monospace" font-size="14" fill="#9ece6a">W:94%</text>
+  <text x="714" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="738" y="34" font-family="monospace" font-size="14" fill="#565f89">45мин</text>
+  <text x="792" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="816" y="34" font-family="monospace" font-size="14" fill="#9ece6a">main●</text>
+  <text x="870" y="34" font-family="monospace" font-size="14" fill="#9ece6a">new●</text>
+  <text x="918" y="34" font-family="monospace" font-size="14" fill="#9ece6a" font-weight="bold">sec●</text>
+  <text x="962" y="34" font-family="monospace" font-size="11" fill="#565f89">(</text>
+  <text x="972" y="34" font-family="monospace" font-size="14" fill="#9ece6a">R:45%</text>
+  <text x="1022" y="34" font-family="monospace" font-size="14" fill="#9ece6a">D:48%</text>
+  <text x="1074" y="34" font-family="monospace" font-size="11" fill="#565f89">)</text>
+  <text x="1086" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="1110" y="34" font-family="monospace" font-size="14" fill="#9ece6a">22% контекст</text>
 </svg>

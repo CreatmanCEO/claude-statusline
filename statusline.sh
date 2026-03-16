@@ -29,6 +29,7 @@ COST_MODEL="${COST_MODEL:-auto}"
 SHOW_LIMITS="${SHOW_LIMITS:-true}"        # H/W limits (5h/7d quotas)
 LIMITS_CACHE_SEC="${LIMITS_CACHE_SEC:-120}"  # limits cache (seconds)
 VPS_FOCUS="${VPS_FOCUS:-auto}"          # auto | server_name | none
+VPS_SERVERS=("${VPS_SERVERS[@]}")      # VPS list: "name|ip|port|user|key"
 VPS_MCP_MAP=("${VPS_MCP_MAP[@]}")      # MCP→VPS mapping: "main|vps-main"
 
 if [[ -f "$CONFIG_FILE" ]]; then source "$CONFIG_FILE"; fi
@@ -247,15 +248,32 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
 
   # --- Auto-detect active VPS from transcript ---
   FOCUSED_VPS=""
-  if [[ "$VPS_FOCUS" == "auto" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" && ${#VPS_MCP_MAP[@]} -gt 0 ]]; then
-    # Read last 10KB of transcript — find last MCP SSH call
-    TAIL_DATA=$(tail -c 10000 "$TRANSCRIPT_PATH" 2>/dev/null || true)
-    for mapping in "${VPS_MCP_MAP[@]}"; do
-      IFS='|' read -r vps_name mcp_name <<< "$mapping"
-      if echo "$TAIL_DATA" | grep -q "$mcp_name" 2>/dev/null; then
-        FOCUSED_VPS="$vps_name"  # last found = last used
+  if [[ "$VPS_FOCUS" == "auto" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
+    TAIL_DATA=$(tail -c 20000 "$TRANSCRIPT_PATH" 2>/dev/null || true)
+    if [[ -n "$TAIL_DATA" ]]; then
+      # Strategy 1: detect ssh/scp commands with IP addresses from VPS_SERVERS
+      # Find which IP appears LAST in the transcript (= most recently used)
+      if [[ ${#VPS_SERVERS[@]} -gt 0 ]]; then
+        last_line=0
+        for srv in "${VPS_SERVERS[@]}"; do
+          IFS='|' read -r vps_name vps_ip _ _ _ <<< "$srv"
+          line_num=$(echo "$TAIL_DATA" | { grep -nE "(ssh|scp|sftp).*${vps_ip//./\\.}" || true; } | tail -1 | cut -d: -f1)
+          if [[ -n "$line_num" ]] && (( line_num > last_line )); then
+            last_line=$line_num
+            FOCUSED_VPS="$vps_name"
+          fi
+        done
       fi
-    done
+      # Strategy 2 (fallback): detect MCP server names in transcript
+      if [[ -z "$FOCUSED_VPS" && ${#VPS_MCP_MAP[@]} -gt 0 ]]; then
+        for mapping in "${VPS_MCP_MAP[@]}"; do
+          IFS='|' read -r vps_name mcp_name <<< "$mapping"
+          if echo "$TAIL_DATA" | grep -q "$mcp_name" 2>/dev/null; then
+            FOCUSED_VPS="$vps_name"
+          fi
+        done
+      fi
+    fi
   elif [[ "$VPS_FOCUS" != "auto" && "$VPS_FOCUS" != "none" ]]; then
     FOCUSED_VPS="$VPS_FOCUS"  # manual mode
   fi
@@ -273,9 +291,9 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
     (( cache_age > VPS_STALE_SEC )) && vps_status="stale"
 
     # Is this VPS focused? (active or problematic)
-    is_focused=false
-    [[ "$vps_name" == "$FOCUSED_VPS" ]] && is_focused=true
-    [[ "$vps_status" == "warn" || "$vps_status" == "crit" || "$vps_status" == "down" ]] && is_focused=true
+    is_focused=false; focus_reason=""
+    if [[ "$vps_name" == "$FOCUSED_VPS" ]]; then is_focused=true; focus_reason="active"; fi
+    if [[ "$vps_status" == "warn" || "$vps_status" == "crit" || "$vps_status" == "down" ]]; then is_focused=true; focus_reason="${focus_reason:-alert}"; fi
 
     case "$vps_status" in
       ok) sym="●"; color="$C_GREEN" ;; warn) sym="◉"; color="$C_YELLOW" ;;
@@ -285,10 +303,11 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
 
     if [[ "$is_focused" == "true" ]]; then
       # Expanded view — active or problematic server
+      active_marker=""; [[ "$focus_reason" == *active* ]] && active_marker="▶"
       if [[ "$vps_status" == "down" ]]; then
-        [[ "$LANG_RU" == "true" ]] && vps_segment+="${color}${C_BOLD}${vps_name}${sym} НЕТ СВЯЗИ${C_RESET} " || vps_segment+="${color}${C_BOLD}${vps_name}${sym} DOWN${C_RESET} "
+        [[ "$LANG_RU" == "true" ]] && vps_segment+="${color}${C_BOLD}${active_marker}${vps_name}${sym} НЕТ СВЯЗИ${C_RESET} " || vps_segment+="${color}${C_BOLD}${active_marker}${vps_name}${sym} DOWN${C_RESET} "
       else
-        vps_segment+="${color}${C_BOLD}${vps_name}${sym}${C_RESET}${C_DIM}(${C_RESET}"
+        vps_segment+="${color}${C_BOLD}${active_marker}${vps_name}${sym}${C_RESET}${C_DIM}(${C_RESET}"
         vps_segment+="$(color_by_threshold "$vps_ram" "$VPS_WARN_RAM" "$VPS_CRIT_RAM")R:${vps_ram}%${C_RESET} "
         vps_segment+="$(color_by_threshold "$vps_disk" "$VPS_WARN_DISK" "$VPS_CRIT_DISK")D:${vps_disk}%${C_RESET}"
         vps_segment+="${C_DIM})${C_RESET} "

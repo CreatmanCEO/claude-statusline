@@ -33,7 +33,7 @@ poll_server() {
     DISK_TOTAL=$(df -h / 2>/dev/null|awk "NR==2{print \$2}"||echo "?")
     UPTIME_SEC=$(awk "{printf \"%.0f\",\$1}" /proc/uptime 2>/dev/null||echo 99999)
     echo "${RAM_PCT}|${RAM_USED}|${RAM_TOTAL}|${CPU_LOAD}|${CPU_PCT}|${CPU_CORES}|${DISK_PCT}|${DISK_USED}|${DISK_TOTAL}|${UPTIME_SEC}"'
-  local ssh_opts="-o ConnectTimeout=${VPS_SSH_TIMEOUT} -o StrictHostKeyChecking=no -o BatchMode=yes -o LogLevel=ERROR"
+  local ssh_opts="-o ConnectTimeout=${VPS_SSH_TIMEOUT} -o ServerAliveInterval=3 -o ServerAliveCountMax=1 -o StrictHostKeyChecking=no -o BatchMode=yes -o LogLevel=ERROR"
   [[ -n "$key" && "$key" != "-" ]] && ssh_opts+=" -i $key"
   local result
   if result=$(ssh $ssh_opts -p "$port" "${user}@${host}" "$remote_cmd" 2>/dev/null); then

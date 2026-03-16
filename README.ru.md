@@ -78,12 +78,17 @@ VPS_SERVERS=(
 
 ### Шаг 3 — Авто-фокус активного VPS
 
-Когда работаешь с сервером через MCP SSH, его метрики разворачиваются автоматически.
+Статуслайн автоматически определяет, с каким VPS ты сейчас работаешь — никакой дополнительной настройки не нужно. Он парсит transcript Claude Code на наличие команд `ssh`/`scp`/`sftp` и сопоставляет IP с `VPS_SERVERS`.
 
-Скажи Claude Code:
+Активный сервер получает маркер `▶` с развёрнутыми метриками RAM/Disk:
+
 ```
-Добавь в ~/.claude/statusline.conf:
+main●  ▶ new●(R:58% D:68%)  sec●
+```
 
+Работает и с Bash SSH (`ssh root@1.2.3.4`), и с MCP SSH. Для MCP-only конфигураций добавь опциональный маппинг:
+
+```
 VPS_FOCUS=auto
 VPS_MCP_MAP=(
   "main|vps-main"
@@ -92,9 +97,7 @@ VPS_MCP_MAP=(
 )
 ```
 
-Левая часть — имя из `VPS_SERVERS`. Правая — имя MCP-подключения.
-
-Результат: работаешь с `vps-main` → `main●(R:42% D:55%) new● sec●`. Переключился → метрики переключились.
+Переключился на другой сервер → метрики переключились автоматически.
 
 **Статусы:** 🟢● ОК | 🟠◉ WARN (>80%) | 🔴✗ DOWN | 🟣↻ BOOT
 
@@ -123,6 +126,7 @@ VPS_MCP_MAP=(
 | `SHOW_GIT` | true/false | Git branch |
 | `SHOW_TOKENS` | true/false | Токены |
 | `SHOW_VPS` | false/remote/local | VPS-мониторинг |
+| `VPS_FOCUS` | auto/none/имя | Авто-определение активного VPS из transcript |
 | `LANG_RU` | true/false | Русские подписи |
 | `CONTEXT_WARN` | 50 | Жёлтый порог |
 | `CONTEXT_CRIT` | 70 | Красный порог |

@@ -75,12 +75,17 @@ The poller runs in background, polling servers every 30s via SSH.
 
 ### Step 3 — Auto-focus active server
 
-When you work with a server via MCP SSH, its metrics expand automatically.
+The statusline automatically detects which VPS you're working on — no extra config needed. It parses the Claude Code transcript for `ssh`/`scp`/`sftp` commands and matches IPs against your `VPS_SERVERS`.
 
-Tell Claude Code:
+The active server gets a `▶` marker with expanded RAM/Disk metrics:
+
 ```
-Add to ~/.claude/statusline.conf:
+main●  ▶ new●(R:58% D:68%)  sec●
+```
 
+This works with both Bash SSH (`ssh root@1.2.3.4`) and MCP SSH. For MCP-only setups, add an optional mapping:
+
+```
 VPS_FOCUS=auto
 VPS_MCP_MAP=(
   "prod|my-mcp-prod"
@@ -115,6 +120,7 @@ Tell Claude Code: `Show my ~/.claude/statusline.conf`
 | `SHOW_GIT` | true/false | Git branch |
 | `SHOW_TOKENS` | true/false | Token counts |
 | `SHOW_VPS` | false/remote/local | VPS monitoring |
+| `VPS_FOCUS` | auto/none/name | Auto-detect active VPS from transcript |
 | `LANG_RU` | true/false | Russian labels |
 | `CONTEXT_WARN` | 50 | Yellow threshold |
 | `CONTEXT_CRIT` | 70 | Red threshold |

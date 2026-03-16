@@ -257,7 +257,7 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
         last_line=0
         for srv in "${VPS_SERVERS[@]}"; do
           IFS='|' read -r vps_name vps_ip _ _ _ <<< "$srv"
-          line_num=$(echo "$TAIL_DATA" | { grep -nE "(ssh|scp|sftp).*${vps_ip//./\\.}" || true; } | tail -1 | cut -d: -f1)
+          line_num=$(echo "$TAIL_DATA" | { grep -nE "\b(ssh|scp|sftp)\b.*\b${vps_ip//./\\.}\b" || true; } | tail -1 | cut -d: -f1)
           if [[ -n "$line_num" ]] && (( line_num > last_line )); then
             last_line=$line_num
             FOCUSED_VPS="$vps_name"
@@ -303,7 +303,7 @@ elif [[ "$SHOW_VPS" == "remote" || "$SHOW_VPS" == "true" ]]; then
 
     if [[ "$is_focused" == "true" ]]; then
       # Expanded view — active or problematic server
-      active_marker=""; [[ "$focus_reason" == *active* ]] && active_marker="▶"
+      active_marker=""; [[ "$focus_reason" == *active* ]] && active_marker="▶ "
       if [[ "$vps_status" == "down" ]]; then
         [[ "$LANG_RU" == "true" ]] && vps_segment+="${color}${C_BOLD}${active_marker}${vps_name}${sym} НЕТ СВЯЗИ${C_RESET} " || vps_segment+="${color}${C_BOLD}${active_marker}${vps_name}${sym} DOWN${C_RESET} "
       else

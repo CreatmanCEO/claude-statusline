@@ -1,29 +1,24 @@
-<svg width="1400" height="56" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1400" height="56" rx="6" fill="#1a1b26"/>
+<svg width="1480" height="56" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1480" height="56" rx="6" fill="#1a1b26"/>
   <text x="16" y="34" font-family="'JetBrains Mono',monospace" font-size="14" fill="#bb9af7" font-weight="bold">Opus 4.6 (1M context)</text>
   <text x="222" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="246" y="34" font-family="monospace" font-size="14" fill="#73daca">main*</text>
-  <text x="296" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="320" y="34" font-family="monospace" font-size="14" fill="#9ece6a">+47</text>
-  <text x="352" y="34" font-family="monospace" font-size="14" fill="#f7768e">/-12</text>
-  <text x="388" y="34" font-family="monospace" font-size="11" fill="#565f89"> стр</text>
-  <text x="416" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="440" y="34" font-family="monospace" font-size="14" fill="#e0af68">~$3.85</text>
-  <text x="496" y="34" font-family="monospace" font-size="11" fill="#565f89">(api)</text>
-  <text x="530" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="554" y="34" font-family="monospace" font-size="14" fill="#9ece6a">H:82%</text>
-  <text x="608" y="34" font-family="monospace" font-size="11" fill="#565f89">3h12m</text>
-  <text x="656" y="34" font-family="monospace" font-size="14" fill="#9ece6a">W:94%</text>
-  <text x="714" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="738" y="34" font-family="monospace" font-size="14" fill="#565f89">45мин</text>
-  <text x="792" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="816" y="34" font-family="monospace" font-size="14" fill="#9ece6a">main●</text>
-  <text x="870" y="34" font-family="monospace" font-size="14" fill="#9ece6a">new●</text>
-  <text x="918" y="34" font-family="monospace" font-size="14" fill="#9ece6a" font-weight="bold">sec●</text>
-  <text x="962" y="34" font-family="monospace" font-size="11" fill="#565f89">(</text>
-  <text x="972" y="34" font-family="monospace" font-size="14" fill="#9ece6a">R:45%</text>
-  <text x="1022" y="34" font-family="monospace" font-size="14" fill="#9ece6a">D:48%</text>
-  <text x="1074" y="34" font-family="monospace" font-size="11" fill="#565f89">)</text>
-  <text x="1086" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
-  <text x="1110" y="34" font-family="monospace" font-size="14" fill="#9ece6a">22% контекст</text>
+  <text x="246" y="34" font-family="monospace" font-size="14" fill="#73daca">feature/redesign-v3</text>
+  <text x="410" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="434" y="34" font-family="monospace" font-size="14" fill="#9ece6a">+8320</text>
+  <text x="486" y="34" font-family="monospace" font-size="14" fill="#f7768e">/-1468</text>
+  <text x="542" y="34" font-family="monospace" font-size="11" fill="#565f89"> стр</text>
+  <text x="572" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="596" y="34" font-family="monospace" font-size="14" fill="#e0af68" font-weight="bold">$40.72</text>
+  <text x="660" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="684" y="34" font-family="monospace" font-size="14" fill="#e0af68">H:64%</text>
+  <text x="740" y="34" font-family="monospace" font-size="11" fill="#565f89">2h28m</text>
+  <text x="790" y="34" font-family="monospace" font-size="14" fill="#e0af68">W:51%</text>
+  <text x="848" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="872" y="34" font-family="monospace" font-size="14" fill="#565f89">100ч23м</text>
+  <text x="948" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="972" y="34" font-family="monospace" font-size="14" fill="#9ece6a">main●</text>
+  <text x="1024" y="34" font-family="monospace" font-size="14" fill="#9ece6a">new●</text>
+  <text x="1070" y="34" font-family="monospace" font-size="14" fill="#9ece6a">sec●</text>
+  <text x="1114" y="34" font-family="monospace" font-size="14" fill="#3b4261"> │ </text>
+  <text x="1138" y="34" font-family="monospace" font-size="14" fill="#9ece6a">28% контекст</text>
 </svg>

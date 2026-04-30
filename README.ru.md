@@ -1,166 +1,165 @@
-<div align="center">
-
-🌐 **Language / Язык**
-
-[![English](https://img.shields.io/badge/English-blue?style=flat-square)](README.md) [![Русский](https://img.shields.io/badge/Русский-red?style=flat-square)](README.ru.md)
-
-</div>
-
 # claude-statusline
 
-Умный status line для [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — модель, стоимость, контекст, лимиты, состояние VPS — всё перед глазами прямо во время работы.
+[![License: MIT](https://img.shields.io/github/license/CreatmanCEO/claude-statusline?color=yellow)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/CreatmanCEO/claude-statusline?style=flat&color=yellow)](https://github.com/CreatmanCEO/claude-statusline/stargazers)
+[![Validate](https://github.com/CreatmanCEO/claude-statusline/actions/workflows/validate.yml/badge.svg)](https://github.com/CreatmanCEO/claude-statusline/actions/workflows/validate.yml)
+[![Habr](https://img.shields.io/badge/Habr-9.3K%20%D1%87%D1%82%D0%B5%D0%BD%D0%B8%D0%B9-77a2b6)](https://habr.com/ru/articles/1013414/)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Opus%204.7%20%C2%B7%201M%20context-cc785c)](https://code.claude.com)
+[![bash](https://img.shields.io/badge/bash-pure%20%2B%20jq-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
+[![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)](#платформы)
 
-![claude-statusline](screenshot.svg)
+🇷🇺 Русский · [🇬🇧 English](README.md)
 
-[![MIT](https://img.shields.io/github/license/CreatmanCEO/claude-statusline?style=flat-square&color=green)](LICENSE) [![bash](https://img.shields.io/badge/bash-script-4EAA25?style=flat-square&logo=gnubash&logoColor=white)]() [![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue?style=flat-square)]()
+**Умная статус-строка для [Claude Code](https://code.claude.com) — модель, стоимость, контекст, лимиты, здоровье VPS — всё одним взглядом, не выходя из потока. Чистый bash + `jq`, без Node.js.** *Описание дизайна и фичи авто-фокуса — в [статье на Хабре (9.3K чтений)](https://habr.com/ru/articles/1013414/).*
 
-**Без Node.js. Без npm. Чистый bash + jq.**
+![Живая статус-строка во время 100-часовой сессии Claude Code](docs/screenshots/statusline-live.png)
+
+> Выше: реальный кадр 100-часовой сессии Opus — 8320 строк кода, $40 «сэкономлено» подпиской Max, RAM/диск трёх VPS одним взглядом. Скриншот из [статьи на Хабре](https://habr.com/ru/articles/1013414/).
+
+## Что значит каждый сегмент
+
+![Разбор сегментов](docs/segments-annotated.svg)
+
+| Сегмент | Пример | Что значит |
+|---|---|---|
+| Модель | `Opus 4.7` | Текущая модель |
+| Git | `main*` | Ветка + индикатор «грязного» дерева |
+| Строки | `+47/-12` | Добавлено/удалено за сессию |
+| Стоимость | `~$3.85(api)` | Теоретическая API-цена (для подписчиков) или реальная (для API-юзеров) |
+| 5-часовая квота | `H:82% 3h12m` | Остаток + время до сброса |
+| Недельная квота | `W:94%` | Остаток 7-дневной квоты |
+| Длительность | `45m` | Время сессии |
+| VPS | `▶ main● new◉(R:92%) sec●` | Здоровье серверов с авто-фокусом на активный |
+| Контекст | `22% ctx` | Зелёный → жёлтый (50%) → красный (70%, время `/compact`) |
+
+## Архитектура
+
+Главное архитектурное решение — **развязать медленный SSH-опрос и мгновенный рендеринг статус-строки через кэш в `/tmp`.** Statusline запускается на каждом промпте Claude Code — он не может позволить себе блокировку на 5-секундном SSH-таймауте.
+
+![Архитектура: vps-poller пишет кэш, statusline читает кэш, transcript управляет авто-фокусом](docs/architecture.svg)
+
+| Компонент | Роль |
+|---|---|
+| `vps-poller.sh` | Фоновый демон. Цикл каждые 30 с, один SSH на сервер, выполняет `free / loadavg / df / uptime`, атомарно пишет `/tmp/vps-<name>.json`. SSH-таймаут 5 с → DOWN. |
+| `/tmp/vps-*.json` | Кэш. По одному файлу на VPS. Маркер «устаревшее > 120 с». |
+| `statusline.sh` | Запускается на каждом промпте Claude Code. Читает кэш (~0 мс), парсит последние 20 КБ `~/.claude/projects/*.jsonl` для `ssh`/`scp`/`sftp`-команд (определяет активный VPS), применяет цветовые пороги, печатает одну строку bash. |
+| `~/.claude/projects/*.jsonl` | Transcript Claude Code. Используется для **авто-фокуса**: тот VPS, в который агент только что подключался, получает маркер `▶` с расширенными метриками RAM/Disk. |
 
 ## Установка
 
-Запусти Claude Code (`claude` в терминале) и скажи:
+Открой Claude Code (`claude` в терминале) и скажи:
 
 ```
-Клонируй https://github.com/CreatmanCEO/claude-statusline и установи через install.sh --ru
+Клонируй https://github.com/CreatmanCEO/claude-statusline и установи через install.sh
 ```
 
-Или выполни прямо в Claude Code:
+Или напрямую:
 
 ```bash
-git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusline && bash ~/claude-statusline/install.sh --ru
+git clone https://github.com/CreatmanCEO/claude-statusline.git ~/claude-statusline && bash ~/claude-statusline/install.sh
 ```
 
-Перезапусти Claude Code. Статус-линия появится автоматически.
+Перезапусти Claude Code. Статус-строка появится автоматически.
 
-> **Windows (PowerShell/cmd):** Запускай из Claude Code, не из PowerShell напрямую (`.sh` файлы требуют bash).
+> **Windows:** запускай из Claude Code, не из cmd/PowerShell (`.sh` нужен bash). См. [Troubleshooting](#troubleshooting) ниже.
 
-## Что показывает
+### Опции установки
 
-| Сегмент | Пример | Описание |
-|---------|--------|----------|
-| Модель | `Opus 4.6` | Текущая модель |
-| Git | `main*` | Ветка + незакоммиченные изменения |
-| Строки | `+47/-12 стр` | Добавлено/удалено за сессию |
-| Стоимость | `~$3.85(api)` | Теоретическая для подписки; реальная для API |
-| Лимиты | `H:82% 3h12m W:94%` | Остаток 5-часовой и 7-дневной квоты |
-| Время | `45мин` | Длительность сессии |
-| VPS | `main● sec●(R:45% D:48%)` | Состояние серверов с авто-фокусом |
-| Контекст | `22% контекст` | Заполнение контекста (зелёный → жёлтый → красный) |
+```bash
+bash ~/claude-statusline/install.sh            # базовая
+bash ~/claude-statusline/install.sh --vps      # + VPS-мониторинг
+bash ~/claude-statusline/install.sh --ru       # русские подписи
+bash ~/claude-statusline/install.sh --tmux     # tmux-интеграция (Prefix+y popup)
+bash ~/claude-statusline/install.sh --minimal  # только модель + контекст
+bash ~/claude-statusline/install.sh --uninstall
+```
 
 ## VPS-мониторинг
 
-Для разработчиков, работающих с серверами через MCP SSH — состояние VPS не отвлекаясь от кода.
+Для тех, кто работает с удалёнными серверами через Bash SSH или MCP SSH — видишь здоровье VPS не переключаясь.
 
-### Шаг 1 — Добавить серверы
+### Шаг 1 — добавить серверы
 
 Скажи Claude Code:
+
 ```
 Открой ~/.claude/statusline.conf и добавь:
 
 SHOW_VPS=remote
 VPS_SERVERS=(
-  "main|95.85.234.200|22|root|~/.ssh/claude_vps"
-  "new|95.85.235.189|22|root|~/.ssh/claude_vps"
-  "sec|178.17.50.45|22|root|~/.ssh/claude_vps_key"
+  "prod|1.2.3.4|22|root|~/.ssh/my_key"
+  "staging|5.6.7.8|22|root|~/.ssh/my_key"
 )
 ```
 
-Замени IP, юзеров и пути к ключам на свои.
+### Шаг 2 — запустить поллер
 
-### Шаг 2 — Запустить поллер
-
-Скажи Claude Code:
 ```
 Запусти ~/claude-statusline/vps-poller.sh start
 ```
 
-Поллер работает в фоне, опрашивает серверы каждые 30 секунд по SSH.
+Поллер крутится в фоне, опрашивает серверы каждые 30 с по SSH. Логи — в `/tmp/vps-poller.log`.
 
-### Шаг 3 — Авто-фокус активного VPS
+### Шаг 3 — авто-фокус активного сервера
 
-Статуслайн автоматически определяет, с каким VPS ты сейчас работаешь — никакой дополнительной настройки не нужно. Он парсит transcript Claude Code на наличие команд `ssh`/`scp`/`sftp` и сопоставляет IP с `VPS_SERVERS`.
-
-Активный сервер получает маркер `▶` с развёрнутыми метриками RAM/Disk:
+Statusline сам определяет, с каким VPS ты сейчас работаешь, парся последние 20 КБ Claude Code transcript на `ssh`/`scp`/`sftp` и сопоставляя IP с `VPS_SERVERS`. Активный VPS получает маркер `▶` с расширенными метриками RAM/Disk:
 
 ```
 main●  ▶ new●(R:58% D:68%)  sec●
 ```
 
-Работает и с Bash SSH (`ssh root@1.2.3.4`), и с MCP SSH. Для MCP-only конфигураций добавь опциональный маппинг:
+Работает и с Bash SSH (`ssh root@1.2.3.4`), и с MCP SSH (если MCP-серверы используют те же IP). Для MCP-only сетапов, где IP не виден в transcript, добавь явный маппинг:
 
-```
+```bash
 VPS_FOCUS=auto
 VPS_MCP_MAP=(
-  "main|vps-main"
-  "new|vps-new"
-  "sec|vps-secondary"
+  "prod|my-mcp-prod"
+  "staging|my-mcp-staging"
 )
 ```
 
-Переключился на другой сервер → метрики переключились автоматически.
-
-**Статусы:** 🟢● ОК | 🟠◉ WARN (>80%) | 🔴✗ DOWN | 🟣↻ BOOT
+**Глифы статусов:** 🟢 `●` OK · 🟠 `◉` WARN (>80%) · 🔴 `✗` DOWN · 🟣 `↻` BOOT · ⚪ `▽` STALE (кэш > 120 с)
 
 ## Лимиты использования (H/W)
 
-Показывает остаток 5-часовой (`H:82% 3h12m`) и 7-дневной (`W:94%`) квоты для подписчиков Max/Pro/Team. Цвета: зелёный >50%, жёлтый 20-50%, красный <20%.
+`H:82% 3h12m` — остаток 5-часовой квоты + время до сброса; `W:94%` — недельной. Для подписчиков Max / Pro / Team. Цвет: зелёный > 50%, жёлтый 20–50%, красный < 20%.
 
-Требуется авторизация через `claude login`. Данные кэшируются на 2 минуты.
+Читает OAuth-токен из `~/.claude/.credentials.json` после `claude login`. Кэш 2 минуты.
 
-> Вдохновлено проектом [@AndyShaman/claude-statusline](https://github.com/AndyShaman/claude-statusline) — спасибо за идею и документацию OAuth API!
+> Идею взял у [@AndyShaman/claude-statusline](https://github.com/AndyShaman/claude-statusline) — спасибо за документацию OAuth API. Если нужны только лимиты без VPS-мониторинга — его версия легче.
 
-## Настройка
+## Конфигурация
 
-Все параметры в `~/.claude/statusline.conf`. Изменения подхватываются автоматически — перезапуск не нужен.
+Все настройки в `~/.claude/statusline.conf`. Изменения применяются при следующем ответе Claude Code — перезапуск не нужен.
 
-Скажи Claude Code: `Покажи мой ~/.claude/statusline.conf`
+| Параметр | Значения | Описание |
+|---|---|---|
+| `SHOW_MODEL` | true / false | Имя модели |
+| `SHOW_COST` | true / false | API-стоимость |
+| `SHOW_LIMITS` | true / false | Квоты H/W |
+| `SHOW_CONTEXT` | true / false | % контекста |
+| `SHOW_LINES` | true / false | Изменённые строки |
+| `SHOW_DURATION` | true / false | Время сессии |
+| `SHOW_GIT` | true / false | Git-ветка |
+| `SHOW_TOKENS` | true / false | Сырые счётчики токенов |
+| `SHOW_VPS` | false / remote / local | Режим VPS-мониторинга |
+| `VPS_FOCUS` | auto / none / `<имя>` | Авто-определение активного VPS |
+| `LANG_RU` | true / false | Русские подписи |
+| `CONTEXT_WARN` | 50 | % контекста → жёлтый |
+| `CONTEXT_CRIT` | 70 | % контекста → красный |
+| `VPS_POLL_INTERVAL` | 30 | Интервал опроса (с) |
+| `VPS_SSH_TIMEOUT` | 5 | Таймаут SSH — DOWN если превышен |
+| `VPS_STALE_SEC` | 120 | Кэш старше — stale `▽` |
+| `COST_MODEL` | auto / opus / sonnet / haiku | Селектор модели для расчёта |
+| `TMUX_BRIDGE` | auto / on / off | tmux-интеграция |
 
-| Параметр | Значения | Что делает |
-|----------|----------|------------|
-| `SHOW_MODEL` | true/false | Имя модели |
-| `SHOW_COST` | true/false | Стоимость |
-| `SHOW_LIMITS` | true/false | Лимиты H/W |
-| `SHOW_CONTEXT` | true/false | Процент контекста |
-| `SHOW_LINES` | true/false | +/- строки |
-| `SHOW_DURATION` | true/false | Время сессии |
-| `SHOW_GIT` | true/false | Git branch |
-| `SHOW_TOKENS` | true/false | Токены |
-| `SHOW_VPS` | false/remote/local | VPS-мониторинг |
-| `VPS_FOCUS` | auto/none/имя | Авто-определение активного VPS из transcript |
-| `LANG_RU` | true/false | Русские подписи |
-| `CONTEXT_WARN` | 50 | Жёлтый порог |
-| `CONTEXT_CRIT` | 70 | Красный порог |
+Полный список с дефолтами — см. [`statusline.conf`](statusline.conf).
 
-## Решение проблем
+## Полезные команды Claude Code
 
-### Статуслайн пропал после установки (Windows)
-
-На Windows `.sh` файлы не запускаются напрямую. Скажи Claude Code:
-```
-В ~/.claude/settings.json замени statusLine.command на: bash /c/Users/ТВОЁ_ИМЯ/.claude/statusline.sh
-```
-
-### Не отображаются лимиты H/W
-
-1. Выполни `claude login` если ещё не делал
-2. Скажи Claude Code: `Проверь есть ли файл ~/.claude/.credentials.json`
-3. Если не найден — лимиты тихо пропускаются, остальное работает
-
-## Варианты установки
-
-В Claude Code:
-```bash
-bash ~/claude-statusline/install.sh --ru            # базовая + русский
-bash ~/claude-statusline/install.sh --ru --tmux     # + tmux (popup по Prefix+y)
-bash ~/claude-statusline/install.sh --minimal       # только модель + контекст
-bash ~/claude-statusline/install.sh --uninstall     # удалить
-```
-
-## Полезные slash-команды Claude Code
-
-- `/cost` — стоимость сессии и токены
-- `/context` — детальная разбивка контекстного окна
-- `/compact` — сжать контекст (когда статус-линия красная)
+- `/cost` — стоимость и токены сессии
+- `/context` — детальный разбор контекстного окна
+- `/compact` — сжать контекст (когда статус-строка покраснела)
 - `/model sonnet` — переключить модель
 
 ## Платформы
@@ -169,12 +168,70 @@ bash ~/claude-statusline/install.sh --uninstall     # удалить
 |---|---|---|---|
 | **Linux** | ✅ | ✅ | ✅ |
 | **macOS** | ✅ | ✅ | ✅ |
-| **Windows** (через Claude Code) | ✅ | ✅ | — |
+| **Windows** (через Claude Code в Git Bash / WSL) | ✅ | ✅ | — |
 
-## Благодарности
+## Troubleshooting
 
-Фича лимитов H/W вдохновлена проектом [@AndyShaman/claude-statusline](https://github.com/AndyShaman/claude-statusline) — спасибо за идею и документацию OAuth API! Если нужны только лимиты без VPS-мониторинга — рекомендуем его версию.
+### После установки статус-строка пропала (Windows)
+
+`.sh`-файлы не выполняются из cmd / PowerShell. Скажи Claude Code:
+
+```
+В ~/.claude/settings.json установи statusLine.command в: bash /c/Users/YOUR_NAME/.claude/statusline.sh
+```
+
+### Лимиты H/W не отображаются
+
+1. Запусти `claude login` если не залогинен
+2. Проверь что `~/.claude/.credentials.json` существует
+3. Если нет — лимиты тихо пропускаются, остальное работает
+
+### VPS показывает DOWN, хотя сервер в порядке
+
+- Слишком жёсткий SSH-таймаут (5 с по умолчанию) на медленной сети → подними `VPS_SSH_TIMEOUT`
+- Не загружен SSH-ключ → `ssh-add ~/.ssh/my_key`
+- Firewall / ufw блокирует исходящие → проверь `/tmp/vps-poller.log`
+
+### Авто-фокус выбирает не тот VPS
+
+- Парсер смотрит последние 20 КБ transcript. После многих tool-call'ов нужный `ssh` может уйти из окна → пин вручную через `VPS_FOCUS=<имя>`
+- Для MCP-only SSH (IP скрыты) → настрой `VPS_MCP_MAP`
+
+## Ограничения
+
+Это персональный инструмент, не managed-сервис. Честные ограничения:
+
+- **Парсинг transcript эвристический.** Авто-фокус читает последние 20 КБ JSONL Claude Code. В длинных сессиях с интенсивным MCP-трафиком нужный `ssh`-вызов может уйти из окна. Workaround: пин через `VPS_FOCUS=<имя>`.
+- **Допущение про OS credential storage.** Лимиты читаются из `~/.claude/.credentials.json`. Если Anthropic меняет формат — лимиты тихо ломаются до апдейта скрипта.
+- **Требуется bash + jq.** Скрипт не запустится без `bash` (4+) и `jq`. PowerShell / fish / dash не поддерживаются. WSL — норм.
+- **Глобальный SSH-таймаут.** Один медленный VPS не тормозит statusline (поллер асинхронен), но равномерно медленная сеть может вызывать мерцание DOWN/UP. Подними `VPS_SSH_TIMEOUT`.
+- **Нет истории метрик.** Только текущий снимок. Для графиков — Grafana / Netdata / Prometheus. Этот инструмент отвечает «горит ли что-то **прямо сейчас**», а не «как было вчера».
+- **tmux на Windows не поддерживается.** tmux под Windows в принципе хрупкий, флаг `--tmux` — только Linux/macOS.
+- **Демон best-effort.** `vps-poller.sh start` — detached процесс, не systemd-юнит. После reboot хоста запускай поллер вручную (или оберни в свой `systemctl --user` юнит).
+
+## Связанные проекты
+
+- [Claude Code Anti-Regression Setup](https://github.com/CreatmanCEO/claude-code-antiregression-setup) — sister-репо, тот же автор. Дополняет: statusline показывает где контекст *сейчас*; anti-regression configs не дают Claude его испортить.
+- [ai-context-hierarchy](https://github.com/CreatmanCEO/ai-context-hierarchy) — sister-репо. Трёхуровневая система контекста, которая натурально парится с авто-фокусом VPS (Level 0 — список серверов, statusline — кто из них горячий).
+- [@AndyShaman/claude-statusline](https://github.com/AndyShaman/claude-statusline) — оригинальное вдохновение для фичи H/W лимитов; легче если нужны только квоты.
+- [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) — кураторская подборка skills, hooks, agents.
+
+## Сопровождающая статья
+
+- [Habr — Как я собрал statusline для Claude Code с мониторингом VPS за одну сессию](https://habr.com/ru/articles/1013414/) — 9.3K чтений. Покрывает развязку через кэш, эвристику авто-фокуса и логику расчёта стоимости.
+
+## Контрибьют
+
+PR приветствуются — см. [CONTRIBUTING.md](CONTRIBUTING.md). Текущие приоритеты: пакеты для дистрибутивов (`apt`, `brew`, `dnf`), новые языковые локали, альтернативные backend'ы метрик VPS (Netdata API, Prometheus push, MCP `system_*` tools), Fish/Zsh.
+
+## Автор
+
+**Николай Подоляк (Nick Podolyak)** — Python-разработчик и цифровой архитектор в [CREATMAN](https://creatman.site)
+
+- GitHub: [@CreatmanCEO](https://github.com/CreatmanCEO)
+- Habr: [creatman](https://habr.com/ru/users/creatman/)
+- dev.to: [@creatman](https://dev.to/creatman)
 
 ## Лицензия
 
-MIT — [Nick Podolyak](https://github.com/CreatmanCEO) / CREATMAN Studio
+[MIT](LICENSE) · Николай Подоляк

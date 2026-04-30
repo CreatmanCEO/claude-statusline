@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="900" height="380" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial">
+  <title>claude-statusline architecture — poller writes cache, statusline reads cache</title>
+  <desc>Architecture: vps-poller.sh runs as a background daemon, polling each VPS over SSH every 30 seconds and writing JSON cache files to /tmp/vps-*.json. The statusline.sh script reads these cache files instantly on every Claude Code prompt — zero latency, zero blocking on SSH. The statusline also parses the Claude Code transcript to detect which VPS the user is currently working with via auto-focus.</desc>
+
+  <rect x="0" y="0" width="900" height="380" fill="#0d1117"/>
+
+  <!-- Title -->
+  <text x="450" y="32" text-anchor="middle" font-size="18" fill="#e6edf3" font-weight="600">claude-statusline architecture</text>
+  <text x="450" y="52" text-anchor="middle" font-size="12" fill="#7d8590">cache decouples slow SSH polling from instant statusline rendering</text>
+
+  <!-- vps-poller daemon (left) -->
+  <rect x="40" y="84" width="220" height="120" rx="10" fill="#1f2937" stroke="#3b9eff"/>
+  <text x="150" y="108" text-anchor="middle" font-size="13" fill="#3b9eff" font-weight="700">vps-poller.sh</text>
+  <text x="150" y="124" text-anchor="middle" font-size="10" fill="#9ca3af">background daemon</text>
+  <text x="56" y="148" font-size="11" fill="#d1d5db">• loops every 30 s</text>
+  <text x="56" y="164" font-size="11" fill="#d1d5db">• ssh root@host one-shot</text>
+  <text x="56" y="180" font-size="11" fill="#d1d5db">• free / loadavg / df / uptime</text>
+  <text x="56" y="196" font-size="11" fill="#d1d5db">• 5 s timeout → DOWN</text>
+
+  <!-- Arrow to cache -->
+  <line x1="260" y1="144" x2="338" y2="144" stroke="#3b9eff" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="346,144 334,138 334,150" fill="#3b9eff"/>
+  <text x="299" y="138" text-anchor="middle" font-size="10" fill="#3b9eff">writes</text>
+
+  <!-- Cache (center) -->
+  <rect x="346" y="84" width="208" height="120" rx="10" fill="#1f2937" stroke="#9d6cff"/>
+  <text x="450" y="108" text-anchor="middle" font-size="13" fill="#9d6cff" font-weight="700">/tmp/vps-*.json</text>
+  <text x="450" y="124" text-anchor="middle" font-size="10" fill="#9ca3af">cache files</text>
+  <text x="362" y="148" font-size="11" fill="#d1d5db">• one file per VPS</text>
+  <text x="362" y="164" font-size="11" fill="#d1d5db">• {ram, cpu, disk, uptime}</text>
+  <text x="362" y="180" font-size="11" fill="#d1d5db">• stale &gt; 120 s = ▽</text>
+  <text x="362" y="196" font-size="11" fill="#d1d5db">• atomic write via mktemp</text>
+
+  <!-- Arrow from cache to statusline -->
+  <line x1="554" y1="144" x2="632" y2="144" stroke="#9d6cff" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="640,144 628,138 628,150" fill="#9d6cff"/>
+  <text x="593" y="138" text-anchor="middle" font-size="10" fill="#9d6cff">reads</text>
+
+  <!-- statusline.sh (right) -->
+  <rect x="640" y="84" width="220" height="120" rx="10" fill="#1f2937" stroke="#22c55e"/>
+  <text x="750" y="108" text-anchor="middle" font-size="13" fill="#22c55e" font-weight="700">statusline.sh</text>
+  <text x="750" y="124" text-anchor="middle" font-size="10" fill="#9ca3af">runs on every prompt</text>
+  <text x="656" y="148" font-size="11" fill="#d1d5db">• reads cache (0 ms)</text>
+  <text x="656" y="164" font-size="11" fill="#d1d5db">• parses transcript JSONL</text>
+  <text x="656" y="180" font-size="11" fill="#d1d5db">• applies thresholds → colour</text>
+  <text x="656" y="196" font-size="11" fill="#d1d5db">• prints one line of bash</text>
+
+  <!-- Transcript input (bottom-left → statusline) -->
+  <rect x="40" y="244" width="220" height="92" rx="10" fill="#1f2937" stroke="#cc785c"/>
+  <text x="150" y="266" text-anchor="middle" font-size="13" fill="#cc785c" font-weight="700">~/.claude/projects/*.jsonl</text>
+  <text x="150" y="282" text-anchor="middle" font-size="10" fill="#9ca3af">Claude Code transcript</text>
+  <text x="56" y="304" font-size="11" fill="#d1d5db">• last 20 KB scanned</text>
+  <text x="56" y="320" font-size="11" fill="#d1d5db">• ssh / scp / sftp grep</text>
+
+  <line x1="260" y1="290" x2="640" y2="200" stroke="#cc785c" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="640,200 626,196 632,206" fill="#cc785c"/>
+  <text x="450" y="248" text-anchor="middle" font-size="10" fill="#cc785c">auto-focus VPS detection</text>
+
+  <!-- Output (bottom-right) -->
+  <rect x="346" y="244" width="514" height="92" rx="10" fill="#0d1117" stroke="#374151"/>
+  <text x="603" y="266" text-anchor="middle" font-size="13" fill="#e6edf3" font-weight="700">terminal status line</text>
+  <text x="362" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#27c93f">Opus 4.7</text>
+  <text x="424" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#dcdcaa">main*</text>
+  <text x="466" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#3b9eff">+47/-12</text>
+  <text x="528" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#cc785c">~$3.85</text>
+  <text x="585" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#22c55e">H:82%</text>
+  <text x="638" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#9d6cff">▶ main●</text>
+  <text x="708" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#ff5f56">new◉(R:92%)</text>
+  <text x="800" y="294" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#27c93f">22%</text>
+  <text x="362" y="318" font-size="11" fill="#7d8590">model · git · lines · cost · limits · auto-focused VPS · context</text>
+</svg>

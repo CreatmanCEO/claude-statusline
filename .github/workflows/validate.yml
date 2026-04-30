@@ -31,9 +31,12 @@ jobs:
           exit $fail
 
       - name: ShellCheck
+        # Severity 'error' only — style warnings (SC1090 dynamic source,
+        # SC2034 unused vars, SC2155 declare-and-assign) are tracked
+        # separately and do not gate this workflow.
         uses: ludeeus/action-shellcheck@master
         with:
-          severity: warning
+          severity: error
           scandir: '.'
         continue-on-error: false
 
